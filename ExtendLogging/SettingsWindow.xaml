@@ -1,0 +1,16 @@
+﻿<Window x:Class="ExtendLogging.SettingsWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ExtendLogging"
+             Title="设置窗口 - 更多日志" mc:Ignorable="d" SizeToContent="WidthAndHeight" Closing="Window_Closing" ResizeMode="CanMinimize">
+    <Grid>
+        <StackPanel Margin="5,5,5,5" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
+            <CheckBox x:Name="ShowLevelBox" Content="显示等级"/>
+            <CheckBox x:Name="ShowMedalBox" Content="显示勋章" Margin="5,0,0,0"/>
+            <CheckBox x:Name="ShowTitleBox" Content="显示头衔" Margin="5,0,0,0"/>
+            <CheckBox x:Name="ShowExternBox" Content="显示更多信息" Margin="5,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>
