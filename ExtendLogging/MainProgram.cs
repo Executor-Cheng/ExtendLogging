@@ -34,7 +34,7 @@ namespace ExtendLogging
 
         private PropertyInfo DanmakuCountShow { get; }
 
-        private ObservableCollection<DMPlugin> Plugins { get; set; }
+        //private ObservableCollection<DMPlugin> Plugins { get; set; }
 
         private MethodInfo AddUser { get; }
 
@@ -258,7 +258,7 @@ namespace ExtendLogging
             {
                 this.PluginAuth = "Executor丶";
             }
-            this.PluginVer = "1.0.0";
+            this.PluginVer = "1.0.1";
             this.PluginDesc = "更详细的日志记录";
             this.PluginCont = "847529602@qq.com";
             Type dmjType = DmjWnd.GetType();
@@ -303,7 +303,7 @@ namespace ExtendLogging
 
                     Thread.Sleep(30);
                 }
-            }){ IsBackground = true }.Start();
+            }){ IsBackground = true }.Start(); // 接管弹幕姬线程
         }
 
         public void AddDanmakuCountShow()
@@ -314,127 +314,134 @@ namespace ExtendLogging
 
         private void ProcDanmaku(DanmakuModel danmakuModel)
         {
-            if ((this.Status && (LogLevel || LogMedal || LogTitle)) && danmakuModel.MsgType == MsgTypeEnum.Comment)
+            if (this.Status)
             {
-                JObject j = JObject.Parse(danmakuModel.RawData);
-                int UserMedalLevel = 0;
-                string UserMedalName = null;
-                string UserTitle = j["info"][5].HasValues ? j["info"][5][1].ToString() : null;
-                int UserLevel = j["info"][4][0].ToObject<int>();
-                if (UserTitle != null)
+                if ((LogLevel || LogMedal || LogTitle) && danmakuModel.MsgType == MsgTypeEnum.Comment)
                 {
-                    if (Titles.ContainsKey(UserTitle))
+                    JObject j = JObject.Parse(danmakuModel.RawData);
+                    int UserMedalLevel = 0;
+                    string UserMedalName = null;
+                    string UserTitle = j["info"][5].HasValues ? j["info"][5][1].ToString() : null;
+                    int UserLevel = j["info"][4][0].ToObject<int>();
+                    if (UserTitle != null)
                     {
-                        UserTitle = Titles[UserTitle];
-                    }
-                    else
-                    {
-                        try
-                        {
-                            UpdateTitles();
-                        }
-                        catch
-                        {
-
-                        }
                         if (Titles.ContainsKey(UserTitle))
                         {
                             UserTitle = Titles[UserTitle];
                         }
                         else
                         {
-                            UserTitle = null;
+                            try
+                            {
+                                UpdateTitles();
+                            }
+                            catch
+                            {
+
+                            }
+                            if (Titles.ContainsKey(UserTitle))
+                            {
+                                UserTitle = Titles[UserTitle];
+                            }
+                            else
+                            {
+                                UserTitle = null;
+                            }
                         }
                     }
-                }
-                if (j["info"][3].HasValues)
-                {
-                    UserMedalLevel = j["info"][3][0].ToObject<int>();
-                    UserMedalName = j["info"][3][1].ToString();
-                }
-                string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
-                Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
-                AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false });
-                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
-            }
-            else if (LogExternInfo)
-            {
-                if (danmakuModel.MsgType == MsgTypeEnum.Unknown)
-                {
-                    JObject j = JObject.Parse(danmakuModel.RawData);
-                    string cmd = j["cmd"].ToString();
-                    switch (cmd)
+                    if (j["info"][3].HasValues)
                     {
-                        case "ROOM_SILENT_ON":
-                            {
-                                string type = j["data"]["type"].ToString();
-                                int endTimeStamp = j["data"]["second"].ToObject<int>();
-                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{j["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")}")}";
-                                Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                                AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                                break;
-                            }
-                        case "ROOM_SILENT_OFF":
-                            {
-                                string toLog = "主播取消了房间禁言";
-                                Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                                AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                                break;
-                            }
-                        case "ROOM_BLOCK_MSG":
-                            {
-                                string toLog = $"用户 {j["uname"]}[{j["uid"]}] 已被管理员禁言";
-                                Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                                AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                                break;
-                            }
-                        case "WARNING":
-                            {
-                                string toLog = $"房间被警告:{j["msg"]}";
-                                Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                                AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                                break;
-                            }
-                        case "CUT_OFF":
-                            {
-                                string toLog = "当前直播间被管理员切断";
-                                Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                                AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                                break;
-                            }
-                        case "ROOM_LOCK":
-                            {
-                                string toLog = "当前直播间被管理员关闭";
-                                Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                                AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                                break;
-                            }
-                        default:
-                            {
-                                BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
-                                break;
-                            }
+                        UserMedalLevel = j["info"][3][0].ToObject<int>();
+                        UserMedalName = j["info"][3][1].ToString();
                     }
+                    string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
+                    Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
+                    AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false });
+                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                 }
-                else if (danmakuModel.MsgType == MsgTypeEnum.LiveStart)
+                else if (LogExternInfo)
                 {
-                    string toLog = "主播已开播";
-                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
-                }
-                else if (danmakuModel.MsgType == MsgTypeEnum.LiveEnd)
-                {
-                    string toLog = "主播已下播";
-                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
-                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                    if (danmakuModel.MsgType == MsgTypeEnum.Unknown)
+                    {
+                        JObject j = JObject.Parse(danmakuModel.RawData);
+                        string cmd = j["cmd"].ToString();
+                        switch (cmd)
+                        {
+                            case "ROOM_SILENT_ON":
+                                {
+                                    string type = j["data"]["type"].ToString();
+                                    int endTimeStamp = j["data"]["second"].ToObject<int>();
+                                    string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{j["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")}")}";
+                                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                                    break;
+                                }
+                            case "ROOM_SILENT_OFF":
+                                {
+                                    string toLog = "主播取消了房间禁言";
+                                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                                    break;
+                                }
+                            case "ROOM_BLOCK_MSG":
+                                {
+                                    string toLog = $"用户 {j["uname"]}[{j["uid"]}] 已被管理员禁言";
+                                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                                    break;
+                                }
+                            case "WARNING":
+                                {
+                                    string toLog = $"房间被警告:{j["msg"]}";
+                                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                                    break;
+                                }
+                            case "CUT_OFF":
+                                {
+                                    string toLog = "当前直播间被管理员切断";
+                                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                                    break;
+                                }
+                            case "ROOM_LOCK":
+                                {
+                                    string toLog = "当前直播间被管理员关闭";
+                                    Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                                    AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                                    SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                                    break;
+                                }
+                            default:
+                                {
+                                    BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
+                                    break;
+                                }
+                        }
+                    }
+                    else if (danmakuModel.MsgType == MsgTypeEnum.LiveStart)
+                    {
+                        string toLog = "主播已开播";
+                        Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                        AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                        SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                    }
+                    else if (danmakuModel.MsgType == MsgTypeEnum.LiveEnd)
+                    {
+                        string toLog = "主播已下播";
+                        Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
+                        AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false });
+                        SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
+                    }
+                    else
+                    {
+                        BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
+                    }
                 }
                 else
                 {
@@ -449,9 +456,9 @@ namespace ExtendLogging
 
         public override void Inited()
         {
-            Assembly dmAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(p => p.FullName.StartsWith("Bililive_dm,"));
-            Type appType = dmAssembly.ExportedTypes.FirstOrDefault(p => p.FullName == "Bililive_dm.App");
-            Plugins = (ObservableCollection<DMPlugin>)appType.GetField("Plugins", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public).GetValue(null);
+            //Assembly dmAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(p => p.FullName.StartsWith("Bililive_dm,"));
+            //Type appType = dmAssembly.ExportedTypes.FirstOrDefault(p => p.FullName == "Bililive_dm.App");
+            //Plugins = (ObservableCollection<DMPlugin>)appType.GetField("Plugins", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public).GetValue(null);
             //Type utilsType = dmAssembly.ExportedTypes.FirstOrDefault(p => p.FullName == "Bililive_dm.Utils");
         }
 
