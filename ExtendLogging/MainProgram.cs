@@ -75,6 +75,8 @@ namespace ExtendLogging
 
         private PropertyInfo DanmakuCountShow { get; }
 
+        private FieldInfo EnabledShowError { get; }
+
         private ObservableCollection<DMPlugin> Plugins { get; set; }
 
         private MethodInfo AddUser { get; }
@@ -135,6 +137,7 @@ namespace ExtendLogging
             Static = dmjType.GetField("Static", BindingFlags.GetField | BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DmjWnd);
             AddUser = Static.GetType().GetMethod("AddUser", BindingFlags.Instance | BindingFlags.Public);
             DanmakuCountShow = Static.GetType().GetProperty("DanmakuCountShow", BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public);
+            EnabledShowError = dmjType.GetField("showerror_enabled", BindingFlags.Instance | BindingFlags.NonPublic);
             ((Thread)dmjType.GetField("ProcDanmakuThread", BindingFlags.GetField | BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DmjWnd)).Abort();
             new Thread(() =>
             {
@@ -230,7 +233,7 @@ namespace ExtendLogging
                         }
                     }
                 }
-                else if (PSettings.LogExternInfo && danmakuModel.MsgType == MsgTypeEnum.Unknown)
+                else if (PSettings.LogExternInfo && (danmakuModel.MsgType == MsgTypeEnum.Unknown || danmakuModel.MsgType == MsgTypeEnum.LiveStart || danmakuModel.MsgType == MsgTypeEnum.LiveEnd))
                 {
                     JObject j = JObject.Parse(danmakuModel.RawData);
                     string cmd = j["cmd"].ToString();
@@ -311,7 +314,14 @@ namespace ExtendLogging
         private void ThreeAction(string toLog)
         {
             Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
-            AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, true, false });
+            if ((bool)EnabledShowError.GetValue(DmjWnd))
+            {
+                DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, true, false }));
+            }
+            else
+            {
+                DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false }));
+            }
             SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
         }
 
