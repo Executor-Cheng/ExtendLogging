@@ -1,6 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace ExtendLogging
 {
@@ -9,19 +7,26 @@ namespace ExtendLogging
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        public SettingsWindow()
+        private PluginSettings PSettings { get; }
+
+        public SettingsWindow(PluginSettings pSettings)
         {
+            PSettings = pSettings;
             InitializeComponent();
-            ShowLevelBox.SetBinding(CheckBox.IsCheckedProperty, new Binding("LogLevel") { Mode = BindingMode.TwoWay, Source = MainProgram.Instance });
-            ShowMedalBox.SetBinding(CheckBox.IsCheckedProperty, new Binding("LogMedal") { Mode = BindingMode.TwoWay, Source = MainProgram.Instance });
-            ShowTitleBox.SetBinding(CheckBox.IsCheckedProperty, new Binding("LogTitle") { Mode = BindingMode.TwoWay, Source = MainProgram.Instance });
-            ShowExternBox.SetBinding(CheckBox.IsCheckedProperty, new Binding("LogExternInfo") { Mode = BindingMode.TwoWay, Source = MainProgram.Instance });
+            this.DataContext = pSettings;
         }
 
         internal void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            ShowLevelBox.Focus();
             e.Cancel = true;
             Hide();
+        }
+
+        private void LevelShieldTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            ShowLevelBox.Focus();
+            LevelShieldTextBox.Focus();
         }
     }
 }
