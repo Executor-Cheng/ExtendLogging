@@ -4,13 +4,21 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ExtendLogging"
-             Title="设置窗口 - 更多日志" mc:Ignorable="d" SizeToContent="WidthAndHeight" Closing="Window_Closing" ResizeMode="CanMinimize">
+             Title="设置窗口 - 更多日志" mc:Ignorable="d" SizeToContent="WidthAndHeight" Closing="Window_Closing" ResizeMode="CanMinimize" Height="81">
     <Grid>
-        <StackPanel Margin="5,5,5,5" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
-            <CheckBox x:Name="ShowLevelBox" Content="显示等级"/>
-            <CheckBox x:Name="ShowMedalBox" Content="显示勋章" Margin="5,0,0,0"/>
-            <CheckBox x:Name="ShowTitleBox" Content="显示头衔" Margin="5,0,0,0"/>
-            <CheckBox x:Name="ShowExternBox" Content="显示更多信息" Margin="5,0,0,0"/>
+        <StackPanel>
+            <StackPanel Margin="5,5,5,5" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
+                <CheckBox x:Name="ShowLevelBox" IsChecked="{Binding LogLevel}" Content="显示等级"/>
+                <CheckBox x:Name="ShowMedalBox" IsChecked="{Binding LogMedal}" Content="显示勋章" Margin="5,0,0,0"/>
+                <CheckBox x:Name="ShowTitleBox" IsChecked="{Binding LogTitle}" Content="显示头衔" Margin="5,0,0,0"/>
+                <CheckBox x:Name="ShowExternBox" IsChecked="{Binding LogExternInfo}" Content="显示更多信息" Margin="5,0,0,0"/>
+            </StackPanel>
+            <StackPanel  Margin="5,3,5,5" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
+                <CheckBox x:Name="HideGiftsBox" IsChecked="{Binding HideGifts}" Content="不输出礼物信息"/>
+                <CheckBox x:Name="LevelShieldCheckBox" IsChecked="{Binding EnableShieldLevel}" Content="屏蔽" Margin="5,0,0,0"/>
+                <TextBox x:Name="LevelShieldTextBox" Text="{Binding ShieldLevel}" Height="18" Width="30" TextWrapping="NoWrap" Margin="3,-2,0,0" TextChanged="LevelShieldTextBox_TextChanged"/>
+                <TextBlock TextWrapping="NoWrap" Text="级以下用户的发言" Margin="3,-1,0,0"/>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>
