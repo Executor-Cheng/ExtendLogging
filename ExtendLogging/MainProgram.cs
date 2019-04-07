@@ -77,6 +77,8 @@ namespace ExtendLogging
 
         private FieldInfo EnabledShowError { get; }
 
+        private FieldInfo EnabledIgnoreSpam { get; }
+
         private ObservableCollection<DMPlugin> Plugins { get; set; }
 
         private MethodInfo AddUser { get; }
@@ -138,6 +140,7 @@ namespace ExtendLogging
             AddUser = Static.GetType().GetMethod("AddUser", BindingFlags.Instance | BindingFlags.Public);
             DanmakuCountShow = Static.GetType().GetProperty("DanmakuCountShow", BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public);
             EnabledShowError = dmjType.GetField("showerror_enabled", BindingFlags.Instance | BindingFlags.NonPublic);
+            EnabledIgnoreSpam = dmjType.GetField("ignorespam_enabled", BindingFlags.Instance | BindingFlags.NonPublic);
             ((Thread)dmjType.GetField("ProcDanmakuThread", BindingFlags.GetField | BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DmjWnd)).Abort();
             new Thread(() =>
             {
@@ -150,7 +153,6 @@ namespace ExtendLogging
                         {
                             count = (int)Math.Ceiling(DanmakuQueue.Count / 30.0);
                         }
-
                         for (var i = 0; i < count; i++)
                         {
                             if (DanmakuQueue.Any())
@@ -171,7 +173,6 @@ namespace ExtendLogging
                     Thread.Sleep(30);
                 }
             }){ IsBackground = true }.Start();
-
         }
 
         public void AddDanmakuCountShow()
@@ -186,64 +187,59 @@ namespace ExtendLogging
             {
                 if (danmakuModel.MsgType == MsgTypeEnum.Comment)
                 {
-                    if (PSettings.LogLevel || PSettings.LogMedal || PSettings.LogTitle)
+                    int UserLevel = danmakuModel.RawDataJToken["info"][4][0].ToObject<int>();
+                    if ((!PSettings.EnableShieldLevel || UserLevel >= PSettings.ShieldLevel) && (!(bool)EnabledIgnoreSpam.GetValue(DmjWnd) || !danmakuModel.RawDataJToken["info"][0][9].ToObject<bool>()))
                     {
-                        JObject j = JObject.Parse(danmakuModel.RawData);
-                        int UserLevel = j["info"][4][0].ToObject<int>();
-                        if (!PSettings.EnableShieldLevel || UserLevel >= PSettings.ShieldLevel)
+                        int UserMedalLevel = 0;
+                        string UserMedalName = null;
+                        string UserTitle = danmakuModel.RawDataJToken["info"][5].HasValues ? danmakuModel.RawDataJToken["info"][5][1].ToString() : null;
+                        if (UserTitle != null)
                         {
-                            int UserMedalLevel = 0;
-                            string UserMedalName = null;
-                            string UserTitle = j["info"][5].HasValues ? j["info"][5][1].ToString() : null;
-                            if (UserTitle != null)
+                            if (Titles.ContainsKey(UserTitle))
                             {
+                                UserTitle = Titles[UserTitle];
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    UpdateTitles();
+                                }
+                                catch
+                                {
+
+                                }
                                 if (Titles.ContainsKey(UserTitle))
                                 {
                                     UserTitle = Titles[UserTitle];
                                 }
                                 else
                                 {
-                                    try
-                                    {
-                                        UpdateTitles();
-                                    }
-                                    catch
-                                    {
-
-                                    }
-                                    if (Titles.ContainsKey(UserTitle))
-                                    {
-                                        UserTitle = Titles[UserTitle];
-                                    }
-                                    else
-                                    {
-                                        UserTitle = null;
-                                    }
+                                    UserTitle = null;
                                 }
                             }
-                            if (j["info"][3].HasValues)
-                            {
-                                UserMedalLevel = j["info"][3][0].ToObject<int>();
-                                UserMedalName = j["info"][3][1].ToString();
-                            }
-                            string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
-                            Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
-                            AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false });
-                            SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                         }
+                        if (danmakuModel.RawDataJToken["info"][3].HasValues)
+                        {
+                            UserMedalLevel = danmakuModel.RawDataJToken["info"][3][0].ToObject<int>();
+                            UserMedalName = danmakuModel.RawDataJToken["info"][3][1].ToString();
+                        }
+                        string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
+                        Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
+                        AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false });
+                        SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                     }
                 }
                 else if (PSettings.LogExternInfo && (danmakuModel.MsgType == MsgTypeEnum.Unknown || danmakuModel.MsgType == MsgTypeEnum.LiveStart || danmakuModel.MsgType == MsgTypeEnum.LiveEnd))
                 {
-                    JObject j = JObject.Parse(danmakuModel.RawData);
-                    string cmd = j["cmd"].ToString();
+                    string cmd = danmakuModel.RawDataJToken["cmd"].ToString();
                     switch (cmd)
                     {
                         case "ROOM_SILENT_ON":
                             {
-                                string type = j["data"]["type"].ToString();
-                                int endTimeStamp = j["data"]["second"].ToObject<int>();
-                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{j["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")}")}";
+                                string type = danmakuModel.RawDataJToken["data"]["type"].ToString();
+                                int endTimeStamp = danmakuModel.RawDataJToken["data"]["second"].ToObject<int>();
+                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{danmakuModel.RawDataJToken["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")}")}";
                                 ThreeAction(toLog);
                                 break;
                             }
@@ -255,13 +251,13 @@ namespace ExtendLogging
                             }
                         case "ROOM_BLOCK_MSG":
                             {
-                                string toLog = $"用户 {j["uname"]}[{j["uid"]}] 已被房管禁言";
+                                string toLog = $"用户 {danmakuModel.RawDataJToken["uname"]}[{danmakuModel.RawDataJToken["uid"]}] 已被房管禁言";
                                 ThreeAction(toLog);
                                 break;
                             }
                         case "WARNING":
                             {
-                                string toLog = $"直播间被警告:{j["msg"]}";
+                                string toLog = $"直播间被警告:{danmakuModel.RawDataJToken["msg"]}";
                                 ThreeAction(toLog);
                                 break;
                             }
