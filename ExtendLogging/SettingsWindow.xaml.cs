@@ -23,10 +23,11 @@ namespace ExtendLogging
             Hide();
         }
 
-        private void LevelShieldTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            ShowLevelBox.Focus();
-            LevelShieldTextBox.Focus();
-        }
+        //[Obsolete("Will Cause Fatal Exception")]
+        //private void LevelShieldTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        //{
+        //    ShowLevelBox.Focus();
+        //    LevelShieldTextBox.Focus();
+        //}
     }
 }
