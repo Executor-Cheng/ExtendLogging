@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Net;
 
+#pragma warning disable CA1031 // Do not catch general exception types
 namespace ExtendLogging
 {
     internal class VersionChecker
@@ -33,7 +34,7 @@ namespace ExtendLogging
         /// <summary>
         /// 最后一个出错的Exception
         /// </summary>
-        public Exception lastException { get; private set; } = null;
+        public Exception LastException { get; private set; } = null;
 
         /// <summary>
         /// 插件ID
@@ -121,7 +122,7 @@ namespace ExtendLogging
                 JObject j = JObject.Parse(json);
                 if (j["id"].ToString() != this.Id)
                 {
-                    lastException = new Exception("API返回ID不正确");
+                    LastException = new Exception("API返回ID不正确");
                     return false;
                 }
                 else
@@ -143,7 +144,7 @@ namespace ExtendLogging
                 }
             }
             catch (Exception ex)
-            { lastException = ex; return false; }
+            { LastException = ex; return false; }
 
         }
 
@@ -152,15 +153,15 @@ namespace ExtendLogging
         /// </summary>
         /// <param name="version">当前版本号</param>
         /// <returns>检查结果</returns>
-        public bool hasNewVersion(string version)
-        { return hasNewVersion(new Version(version)); }
+        public bool HasNewVersion(string version)
+        { return HasNewVersion(new Version(version)); }
 
         /// <summary>
         /// 检查是否具有更新的版本
         /// </summary>
         /// <param name="version">当前版本号</param>
         /// <returns>检查结果</returns>
-        public bool hasNewVersion(Version version)
+        public bool HasNewVersion(Version version)
         { return (version.CompareTo(this.Version) < 0); }
         // version对象比参数小（之前，older的版本）
     }

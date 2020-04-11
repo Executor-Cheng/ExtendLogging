@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 
+#pragma warning disable CA1031 // Do not catch general exception types
 namespace ExtendLogging
 {
     public class MainProgram : DMPlugin
@@ -78,8 +79,6 @@ namespace ExtendLogging
         private FieldInfo EnabledShowError { get; }
 
         private FieldInfo EnabledIgnoreSpam { get; }
-
-        private ObservableCollection<DMPlugin> Plugins { get; set; }
 
         private MethodInfo AddUser { get; }
 
@@ -226,7 +225,7 @@ namespace ExtendLogging
                         }
                         string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
                         Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
-                        AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false });
+                        AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null });
                         SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                     }
                 }
@@ -325,14 +324,14 @@ namespace ExtendLogging
         {
             Assembly dmAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(p => p.FullName.StartsWith("Bililive_dm,"));
             Type appType = dmAssembly.ExportedTypes.FirstOrDefault(p => p.FullName == "Bililive_dm.App");
-            Plugins = (ObservableCollection<DMPlugin>)appType.GetField("Plugins", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public).GetValue(null);
+            //Plugins = (ObservableCollection<DMPlugin>)appType.GetField("Plugins", BindingFlags.GetField | BindingFlags.Static | BindingFlags.Public).GetValue(null);
             //Type utilsType = dmAssembly.ExportedTypes.FirstOrDefault(p => p.FullName == "Bililive_dm.Utils");
             if (!VChecker.FetchInfo())
             {
-                Log("版本检查失败 : " + VChecker.lastException.Message);
+                Log("版本检查失败 : " + VChecker.LastException.Message);
                 return;
             }
-            if (VChecker.hasNewVersion(this.PluginVer))
+            if (VChecker.HasNewVersion(this.PluginVer))
             {
                 Log("有新版本啦~最新版本 : " + VChecker.Version + "\n                " + VChecker.UpdateDescription);
                 Log("下载地址 : " + VChecker.DownloadUrl);

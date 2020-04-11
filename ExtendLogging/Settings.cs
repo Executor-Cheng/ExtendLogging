@@ -10,7 +10,7 @@ namespace ExtendLogging
 {
     //Copied From https://github.com/Bililive/BililiveRecorder/blob/dev/BililiveRecorder.Core/Utils.cs#L72
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-    public class DoNotCopyProperty : Attribute { }
+    public sealed class DoNotCopyProperty : Attribute { }
 
     public class Settings : INotifyPropertyChanged
     {

@@ -7,11 +7,11 @@ namespace ExtendLogging
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        private PluginSettings PSettings { get; }
+        //private PluginSettings PSettings { get; }
 
         public SettingsWindow(PluginSettings pSettings)
         {
-            PSettings = pSettings;
+            //PSettings = pSettings;
             InitializeComponent();
             this.DataContext = pSettings;
         }
