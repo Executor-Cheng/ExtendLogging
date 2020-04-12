@@ -311,11 +311,11 @@ namespace ExtendLogging
             Logging.Invoke(DmjWnd, new object[] { $"系统通知:{toLog}" });
             if ((bool)EnabledShowError.GetValue(DmjWnd))
             {
-                DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, true, false }));
+                DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, true, false, null }));
             }
             else
             {
-                DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false }));
+                DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "系统通知", toLog, false, false, null }));
             }
             SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", "系统通知", toLog) });
         }
