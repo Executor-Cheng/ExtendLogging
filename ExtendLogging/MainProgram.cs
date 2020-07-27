@@ -2,7 +2,6 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -21,7 +20,7 @@ namespace ExtendLogging
             { "title-10-1", "圣·尼古拉斯" },
             { "title-39-1", "7th.Annv" },
             { "title-46-1", "甘すぎる" },
-            { "title-47-1", "Kind" },
+            { "title-47-1", "King" },
             { "title-58-1", "夜空花火" },
             { "title-62-1", "[小电视]应援" },
             { "title-63-1", "[22]应援" },
@@ -59,6 +58,26 @@ namespace ExtendLogging
             { "title-179-1", "时光守护" },
             { "title-190-1", "锦鲤" },
             { "title-201-1", "震惊" },
+            { "title-224-1", "Kizuner(初级)" },
+            { "title-225-1", "Kizuner(高级)" },
+            { "title-241-1", "BilibiliWorld" },
+            { "title-243-1", "治愈笑颜" },
+            { "title-245-1", "mikufans/245" },
+            { "title-263-1", "打电话" },
+            { "title-270-1", "FFF团员(复刻)" },
+            { "title-281-1", "2019-IVC" },
+            { "title-284-1", "音·轨迹" },
+            { "title-285-1", "mikufans/285" },
+            { "title-290-1", "蘑菇♥1219" },
+            { "title-293-1", "LPL2020" },
+            { "title-296-1", "奥利给" },
+            { "title-301-1", "OWL2020" },
+            { "title-308-1", "这把算我赢" },
+            { "title-310-1", "2020KPL" },
+            { "title-315-1", "镜出动计划" },
+            { "title-319-1", "COA-3" },
+            { "title-324-1", "蹦迪玩家" },
+            { "title-326-1", "星玩家" },
         };
 
         public static string ConfigPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), @"弹幕姬\Plugins\ExtendLogging");
@@ -105,11 +124,11 @@ namespace ExtendLogging
             {
                 PSettings.LoadConfig();
             }
-            catch (Exception Ex)
+            catch (Exception e)
             {
                 new FileInfo(filePath).MoveTo(Path.Combine(ConfigPath, "BrokenConfig.cfg"));
                 PSettings.SaveConfig();
-                MessageBox.Show($"载入配置文件失败:{Ex.ToString()}\n损坏的配置文件已保存至BrokenConfig.cfg,新的配置文件已生成", "更多日志", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"载入配置文件失败:{e}\n损坏的配置文件已保存至BrokenConfig.cfg,新的配置文件已生成", "更多日志", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             if (PSettings.Enabled)
             {
@@ -229,6 +248,15 @@ namespace ExtendLogging
                         SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                     }
                 }
+                else if (PSettings.LogEnter && danmakuModel.RawDataJToken["cmd"].ToString() == "INTERACT_WORD")
+                {
+                    if (danmakuModel.RawDataJToken["data"]["msg_type"].ToObject<int>() == 1)
+                    {
+                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
+                        Logging.Invoke(DmjWnd, new object[] { $"进房提示:{userName} 进入直播间" });
+                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "进房提示", $"{userName} 进入直播间", true, false, null }));
+                    }
+                }
                 else if (PSettings.LogExternInfo && (danmakuModel.MsgType == MsgTypeEnum.Unknown || danmakuModel.MsgType == MsgTypeEnum.LiveStart || danmakuModel.MsgType == MsgTypeEnum.LiveEnd))
                 {
                     string cmd = danmakuModel.RawDataJToken["cmd"].ToString();
@@ -238,7 +266,7 @@ namespace ExtendLogging
                             {
                                 string type = danmakuModel.RawDataJToken["data"]["type"].ToString();
                                 int endTimeStamp = danmakuModel.RawDataJToken["data"]["second"].ToObject<int>();
-                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{danmakuModel.RawDataJToken["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")}")}";
+                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{danmakuModel.RawDataJToken["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime():yyyy-MM-dd HH:mm:ss}")}";
                                 ThreeAction(toLog);
                                 break;
                             }

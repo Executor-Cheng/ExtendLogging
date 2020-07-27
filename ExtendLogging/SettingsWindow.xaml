@@ -14,7 +14,8 @@
                 <CheckBox x:Name="ShowExternBox" IsChecked="{Binding LogExternInfo}" Content="显示更多信息" Margin="5,0,0,0"/>
             </StackPanel>
             <StackPanel  Margin="5,3,5,5" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal">
-                <CheckBox x:Name="HideGiftsBox" IsChecked="{Binding HideGifts}" Content="不输出礼物信息"/>
+                <CheckBox x:Name="ShowEnterBox" IsChecked="{Binding LogEnter}" Content="显示进房提示"/>
+                <CheckBox x:Name="HideGiftsBox" IsChecked="{Binding HideGifts}" Content="不输出礼物信息" Margin="5,0,0,0"/>
                 <CheckBox x:Name="LevelShieldCheckBox" IsChecked="{Binding EnableShieldLevel}" Content="屏蔽" Margin="5,0,0,0"/>
                 <TextBox x:Name="LevelShieldTextBox" Text="{Binding ShieldLevel}" Height="18" Width="30" TextWrapping="NoWrap" Margin="3,-2,0,0"/>
                 <TextBlock TextWrapping="NoWrap" Text="级以下用户的发言" Margin="3,-1,0,0"/>
