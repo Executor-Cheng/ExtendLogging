@@ -201,136 +201,156 @@ namespace ExtendLogging
 
         private void ProcDanmaku(DanmakuModel danmakuModel)
         {
-            if (this.Status)
+            try
             {
-                if (danmakuModel.MsgType == MsgTypeEnum.Comment)
+                if (this.Status)
                 {
-                    int UserLevel = danmakuModel.RawDataJToken["info"][4][0].ToObject<int>();
-                    if ((!PSettings.EnableShieldLevel || UserLevel >= PSettings.ShieldLevel) && (!(bool)EnabledIgnoreSpam.GetValue(DmjWnd) || !danmakuModel.RawDataJToken["info"][0][9].ToObject<bool>()))
+                    if (danmakuModel.MsgType == MsgTypeEnum.Comment)
                     {
-                        int UserMedalLevel = 0;
-                        string UserMedalName = null;
-                        string UserTitle = danmakuModel.RawDataJToken["info"][5].HasValues ? danmakuModel.RawDataJToken["info"][5][1].ToString() : null;
-                        if (UserTitle != null)
+                        int UserLevel = danmakuModel.RawDataJToken["info"][4][0].ToObject<int>();
+                        if ((!PSettings.EnableShieldLevel || UserLevel >= PSettings.ShieldLevel) && (!(bool)EnabledIgnoreSpam.GetValue(DmjWnd) || !danmakuModel.RawDataJToken["info"][0][9].ToObject<bool>()))
                         {
-                            if (Titles.ContainsKey(UserTitle))
+                            int UserMedalLevel = 0;
+                            string UserMedalName = null;
+                            string UserTitle = danmakuModel.RawDataJToken["info"][5].HasValues ? danmakuModel.RawDataJToken["info"][5][1].ToString() : null;
+                            if (UserTitle != null)
                             {
-                                UserTitle = Titles[UserTitle];
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    UpdateTitles();
-                                }
-                                catch
-                                {
-
-                                }
                                 if (Titles.ContainsKey(UserTitle))
                                 {
                                     UserTitle = Titles[UserTitle];
                                 }
                                 else
                                 {
-                                    UserTitle = null;
+                                    try
+                                    {
+                                        UpdateTitles();
+                                    }
+                                    catch
+                                    {
+
+                                    }
+                                    if (Titles.ContainsKey(UserTitle))
+                                    {
+                                        UserTitle = Titles[UserTitle];
+                                    }
+                                    else
+                                    {
+                                        UserTitle = null;
+                                    }
                                 }
                             }
+                            if (danmakuModel.RawDataJToken["info"][3].HasValues)
+                            {
+                                UserMedalLevel = danmakuModel.RawDataJToken["info"][3][0].ToObject<int>();
+                                UserMedalName = danmakuModel.RawDataJToken["info"][3][1].ToString();
+                            }
+                            string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
+                            Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
+                            AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null });
+                            SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                         }
-                        if (danmakuModel.RawDataJToken["info"][3].HasValues)
+                    }
+                    else
+                    {
+                        switch (danmakuModel.MsgType)
                         {
-                            UserMedalLevel = danmakuModel.RawDataJToken["info"][3][0].ToObject<int>();
-                            UserMedalName = danmakuModel.RawDataJToken["info"][3][1].ToString();
+                            case MsgTypeEnum.LiveStart when PSettings.LogExternInfo:
+                            case MsgTypeEnum.Unknown when PSettings.LogExternInfo:
+                            case MsgTypeEnum.LiveEnd when PSettings.LogExternInfo:
+                                {
+                                    switch (danmakuModel.RawDataJToken["cmd"].ToString())
+                                    {
+                                        case "ROOM_SILENT_ON":
+                                            {
+                                                string type = danmakuModel.RawDataJToken["data"]["type"].ToString();
+                                                int endTimeStamp = danmakuModel.RawDataJToken["data"]["second"].ToObject<int>();
+                                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{danmakuModel.RawDataJToken["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime():yyyy-MM-dd HH:mm:ss}")}";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "ROOM_SILENT_OFF":
+                                            {
+                                                string toLog = "主播取消了房间禁言";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "ROOM_BLOCK_MSG":
+                                            {
+                                                string toLog = $"用户 {danmakuModel.RawDataJToken["uname"]}[{danmakuModel.RawDataJToken["uid"]}] 已被房管禁言";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "WARNING":
+                                            {
+                                                string toLog = $"直播间被警告:{danmakuModel.RawDataJToken["msg"]}";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "CUT_OFF":
+                                            {
+                                                string toLog = "当前直播间被直播管理员切断";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "ROOM_LOCK":
+                                            {
+                                                string toLog = "当前直播间被直播管理员关闭";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "LIVE":
+                                            {
+                                                string toLog = "主播已开播";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        case "PREPARING":
+                                            {
+                                                string toLog = "主播已下播";
+                                                ThreeAction(toLog);
+                                                break;
+                                            }
+                                        default:
+                                            {
+                                                BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
+                                                break;
+                                            }
+                                    }
+                                    break;
+                                }
+                            case MsgTypeEnum.Unknown when danmakuModel.RawDataJToken["cmd"].ToString() == "INTERACT_WORD":
+                                {
+                                    int msgType = danmakuModel.RawDataJToken["data"]["msg_type"].ToObject<int>();
+                                    if (PSettings.LogEnter && msgType == 1)
+                                    {
+                                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
+                                        Logging.Invoke(DmjWnd, new object[] { $"进房提示: {userName} 进入直播间" });
+                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 进入直播间", true, false, null }));
+                                    }
+                                    else if (PSettings.LogFollow && msgType == 2)
+                                    {
+                                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
+                                        Logging.Invoke(DmjWnd, new object[] { $"关注提示: {userName} 关注了直播间" });
+                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 关注了直播间", true, false, null }));
+                                    }
+                                    break;
+                                }
+                            default:
+                                {
+                                    BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
+                                    break;
+                                }
                         }
-                        string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
-                        Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
-                        AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null });
-                        SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                     }
-                }
-                else if (PSettings.LogEnter && danmakuModel.RawDataJToken["cmd"].ToString() == "INTERACT_WORD")
-                {
-                    if (danmakuModel.RawDataJToken["data"]["msg_type"].ToObject<int>() == 1)
-                    {
-                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
-                        Logging.Invoke(DmjWnd, new object[] { $"进房提示:{userName} 进入直播间" });
-                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "进房提示", $"{userName} 进入直播间", true, false, null }));
-                    }
-                }
-                else if (PSettings.LogExternInfo && (danmakuModel.MsgType == MsgTypeEnum.Unknown || danmakuModel.MsgType == MsgTypeEnum.LiveStart || danmakuModel.MsgType == MsgTypeEnum.LiveEnd))
-                {
-                    string cmd = danmakuModel.RawDataJToken["cmd"].ToString();
-                    switch (cmd)
-                    {
-                        case "ROOM_SILENT_ON":
-                            {
-                                string type = danmakuModel.RawDataJToken["data"]["type"].ToString();
-                                int endTimeStamp = danmakuModel.RawDataJToken["data"]["second"].ToObject<int>();
-                                string toLog = $"主播开启了房间禁言.类型:{(type == "member" ? "全体用户" : type == "medal" ? "粉丝勋章" : "用户等级")};{(type != "member" ? $"等级:{danmakuModel.RawDataJToken["data"]["level"]};" : "")}时间:{(endTimeStamp == -1 ? "直到下播" : $"直到{new DateTime(1970, 1, 1).AddSeconds(endTimeStamp).ToLocalTime():yyyy-MM-dd HH:mm:ss}")}";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "ROOM_SILENT_OFF":
-                            {
-                                string toLog = "主播取消了房间禁言";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "ROOM_BLOCK_MSG":
-                            {
-                                string toLog = $"用户 {danmakuModel.RawDataJToken["uname"]}[{danmakuModel.RawDataJToken["uid"]}] 已被房管禁言";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "WARNING":
-                            {
-                                string toLog = $"直播间被警告:{danmakuModel.RawDataJToken["msg"]}";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "CUT_OFF":
-                            {
-                                string toLog = "当前直播间被直播管理员切断";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "ROOM_LOCK":
-                            {
-                                string toLog = "当前直播间被直播管理员关闭";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "LIVE":
-                            {
-                                string toLog = "主播已开播";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        case "PREPARING":
-                            {
-                                string toLog = "主播已下播";
-                                ThreeAction(toLog);
-                                break;
-                            }
-                        default:
-                            {
-                                BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
-                                break;
-                            }
-                    }
-                }
-                else if (danmakuModel.MsgType == MsgTypeEnum.GiftSend && PSettings.HideGifts)
-                {
-                    //Ignore
                 }
                 else
                 {
                     BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
                 }
             }
-            else
+            catch
             {
-                BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
+
             }
         }
 

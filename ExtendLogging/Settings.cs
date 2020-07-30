@@ -58,6 +58,8 @@ namespace ExtendLogging
         public bool LogExternInfo { get => _LogExternInfo; set { if (_LogExternInfo != value) { _LogExternInfo = value; OnPropertyChanged(); } } }
         private bool _LogEnter = false;
         public bool LogEnter { get => _LogEnter; set { if (_LogEnter != value) { _LogEnter = value; OnPropertyChanged(); } } }
+        private bool _LogFollow = false;
+        public bool LogFollow { get => _LogFollow; set { if (_LogFollow != value) { _LogFollow = value; OnPropertyChanged(); } } }
         private bool _HideGifts = false;
         public bool HideGifts { get => _HideGifts; set { if (_HideGifts != value) { _HideGifts = value; OnPropertyChanged(); } } }
         private bool _EnableShieldLevel = false;
