@@ -254,6 +254,23 @@ namespace ExtendLogging
                     {
                         switch (danmakuModel.MsgType)
                         {
+                            case MsgTypeEnum.Unknown when danmakuModel.RawDataJToken["cmd"].ToString() == "INTERACT_WORD":
+                                {
+                                    int msgType = danmakuModel.RawDataJToken["data"]["msg_type"].ToObject<int>();
+                                    if (PSettings.LogEnter && msgType == 1)
+                                    {
+                                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
+                                        Logging.Invoke(DmjWnd, new object[] { $"进房提示: {userName} 进入直播间" });
+                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 进入直播间", true, false, null }));
+                                    }
+                                    else if (PSettings.LogFollow && msgType == 2)
+                                    {
+                                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
+                                        Logging.Invoke(DmjWnd, new object[] { $"关注提示: {userName} 关注了直播间" });
+                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 关注了直播间", true, false, null }));
+                                    }
+                                    break;
+                                }
                             case MsgTypeEnum.LiveStart when PSettings.LogExternInfo:
                             case MsgTypeEnum.Unknown when PSettings.LogExternInfo:
                             case MsgTypeEnum.LiveEnd when PSettings.LogExternInfo:
@@ -315,23 +332,6 @@ namespace ExtendLogging
                                                 BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
                                                 break;
                                             }
-                                    }
-                                    break;
-                                }
-                            case MsgTypeEnum.Unknown when danmakuModel.RawDataJToken["cmd"].ToString() == "INTERACT_WORD":
-                                {
-                                    int msgType = danmakuModel.RawDataJToken["data"]["msg_type"].ToObject<int>();
-                                    if (PSettings.LogEnter && msgType == 1)
-                                    {
-                                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
-                                        Logging.Invoke(DmjWnd, new object[] { $"进房提示: {userName} 进入直播间" });
-                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 进入直播间", true, false, null }));
-                                    }
-                                    else if (PSettings.LogFollow && msgType == 2)
-                                    {
-                                        string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
-                                        Logging.Invoke(DmjWnd, new object[] { $"关注提示: {userName} 关注了直播间" });
-                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 关注了直播间", true, false, null }));
                                     }
                                     break;
                                 }
