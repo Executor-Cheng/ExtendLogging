@@ -261,7 +261,7 @@ namespace ExtendLogging
                                     {
                                         string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
                                         Logging.Invoke(DmjWnd, new object[] { $"进房提示: {userName} 进入直播间" });
-                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 进入直播间", true, false, null }));
+                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "进房提示", $"{userName} 进入直播间", true, false, null }));
                                     }
                                     else if (PSettings.LogFollow && msgType == 2)
                                     {
