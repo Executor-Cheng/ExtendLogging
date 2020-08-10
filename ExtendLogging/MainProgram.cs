@@ -245,9 +245,12 @@ namespace ExtendLogging
                                 UserMedalName = danmakuModel.RawDataJToken["info"][3][1].ToString();
                             }
                             string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
-                            Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
-                            AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null });
-                            SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
+                            DmjWnd.Dispatcher.Invoke(() =>
+                            {
+                                Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
+                                AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null });
+                                SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
+                            });
                         }
                     }
                     else
@@ -261,13 +264,19 @@ namespace ExtendLogging
                                     {
                                         string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
                                         Logging.Invoke(DmjWnd, new object[] { $"进房提示: {userName} 进入直播间" });
-                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "进房提示", $"{userName} 进入直播间", true, false, null }));
+                                        DmjWnd.Dispatcher.Invoke(() =>
+                                        {
+                                            AddDMText.Invoke(DmjWnd, new object[] { "进房提示", $"{userName} 进入直播间", true, false, null });
+                                        });
                                     }
                                     else if (PSettings.LogFollow && msgType == 2)
                                     {
                                         string userName = danmakuModel.RawDataJToken["data"]["uname"].ToString();
                                         Logging.Invoke(DmjWnd, new object[] { $"关注提示: {userName} 关注了直播间" });
-                                        DmjWnd.Dispatcher.Invoke(() => AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 关注了直播间", true, false, null }));
+                                        DmjWnd.Dispatcher.Invoke(() =>
+                                        {
+                                            AddDMText.Invoke(DmjWnd, new object[] { "关注提示", $"{userName} 关注了直播间", true, false, null });
+                                        });
                                     }
                                     break;
                                 }
