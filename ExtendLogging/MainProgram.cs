@@ -335,6 +335,10 @@ namespace ExtendLogging
                                     }
                                     break;
                                 }
+                            case MsgTypeEnum.GiftSend when PSettings.HideGifts: {
+                                    //Ignore
+                                    break;
+                                }
                             default:
                                 {
                                     BaseProcDanmaku.Invoke(DmjWnd, new object[] { danmakuModel });
