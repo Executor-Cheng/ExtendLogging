@@ -213,7 +213,7 @@ namespace ExtendLogging
                             int UserMedalLevel = 0;
                             string UserMedalName = null;
                             string UserTitle = danmakuModel.RawDataJToken["info"][5].HasValues ? danmakuModel.RawDataJToken["info"][5][1].ToString() : null;
-                            if (UserTitle != null)
+                            if (!string.IsNullOrEmpty(UserTitle))
                             {
                                 if (Titles.ContainsKey(UserTitle))
                                 {
@@ -246,7 +246,7 @@ namespace ExtendLogging
                             }
                             string prefix = $"{(danmakuModel.isAdmin ? "[管]" : "")}{(danmakuModel.UserGuardLevel == 3 ? "[舰]" : danmakuModel.UserGuardLevel == 2 ? "[提]" : danmakuModel.UserGuardLevel == 1 ? "[总]" : null)}{(danmakuModel.isVIP ? "[爷]" : "")}{(PSettings.LogMedal && !string.IsNullOrEmpty(UserMedalName) ? $"{{{UserMedalName},{UserMedalLevel}}}" : null)}{(PSettings.LogTitle && !string.IsNullOrEmpty(UserTitle) ? $"[{UserTitle}]" : "")}{(PSettings.LogLevel ? $"(UL {UserLevel})" : "")}{danmakuModel.UserName}";
                             Logging.Invoke(DmjWnd, new object[] { $"收到彈幕:{prefix} 說: {danmakuModel.CommentText}" });
-                            AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null });
+                            AddDMText.Invoke(DmjWnd, new object[] { prefix, danmakuModel.CommentText, false, false, null, false });
                             SendSSP.Invoke(DmjWnd, new object[] { string.Format(@"\_q{0}\n\_q\f[height,20]{1}", prefix, danmakuModel.CommentText) });
                         }
                     }
